@@ -19,59 +19,40 @@ def load_data(file):
 
 st.title("📊 CP-W′ Performance Analyzer")
 
-uploaded = st.file_uploader(
-    "Sube un Excel propio (opcional)",
-    type=["xlsx"]
-)
+uploaded = st.file_uploader("Sube el Excel", type=["xlsx"])
 
 if uploaded is not None:
-    data_source = uploaded
-else:
-    data_source = "practica_potencia_critica_colab_datos.xlsx"
 
-trials, allout, intervals, key = load_data(data_source)
+    trials, allout, intervals, key = load_data(uploaded)
 
-trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
+    trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
 
-results = []
+    results = []
 
-for athlete, df in trials.groupby("athlete_id"):
+    for athlete, df in trials.groupby("athlete_id"):
+        X = df[["duration_s"]]
+        y = df["work_J"]
 
-    X = df[["duration_s"]]
-    y = df["work_J"]
+        model = LinearRegression()
+        model.fit(X, y)
 
-    model = LinearRegression()
-    model.fit(X, y)
+        cp = model.coef_[0]
+        wp = model.intercept_
+        r2 = model.score(X, y)
 
-    cp = model.coef_[0]
-    wp = model.intercept_
-    r2 = model.score(X, y)
+        results.append([athlete, cp, wp, wp/1000, r2])
 
-    results.append([
-        athlete,
-        cp,
-        wp,
-        wp/1000,
-        r2
-    ])
+    summary = pd.DataFrame(
+        results,
+        columns=["Athlete","CP_W","Wprime_J","Wprime_kJ","R2"]
+    )
 
-summary = pd.DataFrame(
-    results,
-    columns=[
-        "Athlete",
-        "CP_W",
-        "Wprime_J",
-        "Wprime_kJ",
-        "R2"
-    ]
-)
+    athlete = st.sidebar.selectbox(
+        "Seleccionar atleta",
+        summary["Athlete"].tolist()
+    )
 
-athlete = st.sidebar.selectbox(
-    "Seleccionar atleta",
-    summary["Athlete"].tolist()
-)
-
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Dashboard",
     "Perfil",
     "3-min All-Out",
@@ -81,7 +62,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Comparación"
 ])
 
-with tab1:
+    with tab1:
 
         st.subheader("Resumen")
 
@@ -97,26 +78,48 @@ with tab1:
         fig = px.bar(summary, x="Athlete", y="CP_W")
         st.plotly_chart(fig, use_container_width=True)
 
-   athlete_row = summary[summary.Athlete==athlete].iloc[0]
-athlete_df = trials[trials.athlete_id==athlete]
+    athlete_row = summary[summary.Athlete==athlete].iloc[0]
+    athlete_df = trials[trials.athlete_id==athlete]
 
-with tab1:
+    with tab2:
 
-    st.subheader("Resumen")
+        st.subheader(f"Perfil atleta {athlete}")
 
-    c1,c2,c3,c4 = st.columns(4)
+        X = athlete_df[["duration_s"]]
+        y = athlete_df["work_J"]
 
-    c1.metric("CP media", round(summary.CP_W.mean(),1))
-    c2.metric("W′ medio (kJ)", round(summary.Wprime_kJ.mean(),1))
-    c3.metric("Mayor CP", round(summary.CP_W.max(),1))
-    c4.metric("Mayor W′", round(summary.Wprime_kJ.max(),1))
+        model = LinearRegression().fit(X,y)
 
-    st.dataframe(summary.round(2), use_container_width=True)
+        pred = model.predict(X)
 
-    fig = px.bar(summary, x="Athlete", y="CP_W")
-    st.plotly_chart(fig, use_container_width=True)
+        fig = go.Figure()
+        fig.add_scatter(x=athlete_df["duration_s"], y=y,
+                        mode="markers", name="Observado")
+        fig.add_scatter(x=athlete_df["duration_s"], y=pred,
+                        mode="lines", name="Modelo")
+        st.plotly_chart(fig, use_container_width=True)
 
-with tab3:
+        cp = athlete_row.CP_W
+        wp = athlete_row.Wprime_J
+
+        t = np.linspace(60,1200,500)
+
+        fig2 = go.Figure()
+        fig2.add_scatter(
+            x=t,
+            y=cp + wp/t,
+            mode="lines",
+            name="Modelo"
+        )
+        fig2.add_scatter(
+            x=athlete_df["duration_s"],
+            y=athlete_df["mean_power_W"],
+            mode="markers",
+            name="Datos"
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+    with tab3:
 
         CP_3min = allout.loc[allout["time_s"]>=155,"power_W"].mean()
 
@@ -138,7 +141,7 @@ with tab3:
         fig.add_hline(y=CP_3min)
         st.plotly_chart(fig, use_container_width=True)
 
-with tab4:
+    with tab4:
 
         cp = athlete_row.CP_W
         wp = athlete_row.Wprime_J
@@ -170,7 +173,7 @@ with tab4:
 
         st.dataframe(out.round(2), use_container_width=True)
 
-with tab5:
+    with tab5:
 
         cp_pct = summary["CP_W"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
         wp_pct = summary["Wprime_J"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
@@ -201,7 +204,7 @@ with tab5:
         Estos resultados sugieren un perfil fisiológico dependiente de la combinación entre capacidad aeróbica sostenible y tolerancia al trabajo realizado por encima de la potencia crítica.
         """)
 
-with tab6:
+    with tab6:
 
         st.subheader("Perfil fisiológico")
 
@@ -266,7 +269,7 @@ with tab6:
          st.markdown("### Perfil predominante: Mixto / equilibrado")
 
 
-with tab7:
+    with tab7:
 
         st.subheader("Comparación entre atletas")
 
