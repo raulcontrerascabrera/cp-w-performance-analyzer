@@ -251,22 +251,22 @@ if uploaded is not None:
         st.plotly_chart(fig, use_container_width=True)
 
         if global_score >= 75:
-        st.success("Perfil fisiológico: Excelente")
+         st.success("Perfil fisiológico: Excelente")
         elif global_score >= 50:
-        st.info("Perfil fisiológico: Alto")
+         st.info("Perfil fisiológico: Alto")
         elif global_score >= 25:
-        st.warning("Perfil fisiológico: Medio")
+         st.warning("Perfil fisiológico: Medio")
         else:
-        st.error("Perfil fisiológico: Bajo")
+         st.error("Perfil fisiológico: Bajo")
 
         st.markdown("---")
 
         if aerobic_index > severe_index + 15:
-        st.markdown("### Perfil predominante: Aeróbico resistente")
+         st.markdown("### Perfil predominante: Aeróbico resistente")
         elif severe_index > aerobic_index + 15:
-        st.markdown("### Perfil predominante: Especialista dominio severo")
+         st.markdown("### Perfil predominante: Especialista dominio severo")
         else:
-        st.markdown("### Perfil predominante: Mixto / equilibrado")
+         st.markdown("### Perfil predominante: Mixto / equilibrado")
 
 
 with tab7:
