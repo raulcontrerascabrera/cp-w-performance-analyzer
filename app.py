@@ -35,28 +35,41 @@ trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
 
 results = []
 
-    for athlete, df in trials.groupby("athlete_id"):
-        X = df[["duration_s"]]
-        y = df["work_J"]
+for athlete, df in trials.groupby("athlete_id"):
 
-        model = LinearRegression()
-        model.fit(X, y)
+    X = df[["duration_s"]]
+    y = df["work_J"]
 
-        cp = model.coef_[0]
-        wp = model.intercept_
-        r2 = model.score(X, y)
+    model = LinearRegression()
+    model.fit(X, y)
 
-        results.append([athlete, cp, wp, wp/1000, r2])
+    cp = model.coef_[0]
+    wp = model.intercept_
+    r2 = model.score(X, y)
 
-    summary = pd.DataFrame(
-        results,
-        columns=["Athlete","CP_W","Wprime_J","Wprime_kJ","R2"]
-    )
+    results.append([
+        athlete,
+        cp,
+        wp,
+        wp/1000,
+        r2
+    ])
 
-    athlete = st.sidebar.selectbox(
-        "Seleccionar atleta",
-        summary["Athlete"].tolist()
-    )
+summary = pd.DataFrame(
+    results,
+    columns=[
+        "Athlete",
+        "CP_W",
+        "Wprime_J",
+        "Wprime_kJ",
+        "R2"
+    ]
+)
+
+athlete = st.sidebar.selectbox(
+    "Seleccionar atleta",
+    summary["Athlete"].tolist()
+)
 
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Dashboard",
