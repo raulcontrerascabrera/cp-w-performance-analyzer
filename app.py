@@ -31,9 +31,9 @@ else:
 
 trials, allout, intervals, key = load_data(data_source)
 
-    trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
+trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
 
-    results = []
+results = []
 
     for athlete, df in trials.groupby("athlete_id"):
         X = df[["duration_s"]]
