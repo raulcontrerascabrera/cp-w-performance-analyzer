@@ -19,7 +19,7 @@ def load_data(file):
 
 st.title("📊 CP-W′ Performance Analyzer")
 
-uploaded = st.file_uploader("Sube el Excel", type=["xlsx"])
+uploaded = "practica_potencia_critica_colab_datos.xlsx"
 
 if uploaded is not None:
 
