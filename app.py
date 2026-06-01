@@ -52,14 +52,15 @@ if uploaded is not None:
         summary["Athlete"].tolist()
     )
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "Dashboard",
-        "Perfil",
-        "3-min All-Out",
-        "HIIT",
-        "Interpretación",
-        "Clasificación"
-    ])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "Dashboard",
+    "Perfil",
+    "3-min All-Out",
+    "HIIT",
+    "Interpretación",
+    "Perfil Fisiológico",
+    "Comparación"
+])
 
     with tab1:
 
@@ -205,32 +206,162 @@ if uploaded is not None:
 
     with tab6:
 
-        score = (cp_pct + wp_pct)/2
+    st.subheader("Perfil fisiológico")
 
-        if score < 0.25:
-            level = "Baja"
-        elif score < 0.50:
-            level = "Media"
-        elif score < 0.75:
-            level = "Alta"
-        else:
-            level = "Excelente"
+    cp_pct = summary["CP_W"].rank(pct=True)[summary.Athlete==athlete].iloc[0]
+    wp_pct = summary["Wprime_J"].rank(pct=True)[summary.Athlete==athlete].iloc[0]
 
-        ratio = athlete_row.Wprime_kJ / athlete_row.CP_W
+    cp_norm = cp_pct * 100
+    wp_norm = wp_pct * 100
 
-        if cp_pct > 0.7 and ratio < 0.06:
-            speciality = "Fondo / 10 km / Media maratón"
-        elif cp_pct > 0.7 and wp_pct > 0.7:
-            speciality = "Medio fondo largo"
-        elif wp_pct > 0.7:
-            speciality = "800-1500 m"
-        else:
-            speciality = "Perfil mixto"
+    aerobic_index = cp_norm
+    severe_index = wp_norm
 
-        st.metric("Nivel fisiológico", level)
+    fatigue_index = (
+        athlete_df["mean_power_W"].max()
+        /
+        athlete_df["mean_power_W"].min()
+    ) * 50
 
-        st.success(f"Especialidad sugerida: {speciality}")
+    fatigue_index = min(fatigue_index,100)
 
-        st.markdown("""
-        **Importante:** esta clasificación es relativa al grupo analizado y no constituye una clasificación normativa de atletas de alto rendimiento.
-        """)
+    global_score = (
+        aerobic_index*0.4 +
+        severe_index*0.4 +
+        fatigue_index*0.2
+    )
+
+    c1,c2,c3,c4 = st.columns(4)
+
+    c1.metric(
+        "Aerobic Index",
+        f"{aerobic_index:.1f}"
+    )
+
+    c2.metric(
+        "Severe Domain Index",
+        f"{severe_index:.1f}"
+    )
+
+    c3.metric(
+        "Fatigue Resistance",
+        f"{fatigue_index:.1f}"
+    )
+
+    c4.metric(
+        "Global Score",
+        f"{global_score:.1f}"
+    )
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=global_score,
+        title={'text': "Global Performance Score"},
+        gauge={
+            'axis': {'range': [0,100]},
+            'bar': {'thickness':0.4}
+        }
+    ))
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+    if global_score >= 75:
+        st.success(
+            "Perfil fisiológico: Excelente"
+        )
+
+    elif global_score >= 50:
+        st.info(
+            "Perfil fisiológico: Alto"
+        )
+
+    elif global_score >= 25:
+        st.warning(
+            "Perfil fisiológico: Medio"
+        )
+
+    else:
+        st.error(
+            "Perfil fisiológico: Bajo"
+        )
+
+    st.markdown("---")
+
+    if aerobic_index > severe_index + 15:
+
+        st.markdown(
+            "### Perfil predominante: Aeróbico resistente"
+        )
+
+    elif severe_index > aerobic_index + 15:
+
+        st.markdown(
+            "### Perfil predominante: Especialista dominio severo"
+        )
+
+    else:
+
+        st.markdown(
+            "### Perfil predominante: Mixto / equilibrado"
+        )
+
+with tab7:
+
+    st.subheader("Comparación entre atletas")
+
+    radar = go.Figure()
+
+    for _, r in summary.iterrows():
+
+        radar.add_trace(
+            go.Scatterpolar(
+                r=[
+                    r["CP_W"],
+                    r["Wprime_kJ"],
+                    r["R2"]*100
+                ],
+                theta=[
+                    "CP",
+                    "W′",
+                    "R²"
+                ],
+                fill="toself",
+                name=r["Athlete"]
+            )
+        )
+
+    radar.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True
+            )
+        ),
+        showlegend=True
+    )
+
+    st.plotly_chart(
+        radar,
+        use_container_width=True
+    )
+
+    leaderboard = summary.copy()
+
+    leaderboard["Score"] = (
+        leaderboard["CP_W"].rank(pct=True)*50 +
+        leaderboard["Wprime_kJ"].rank(pct=True)*50
+    )
+
+    leaderboard = leaderboard.sort_values(
+        "Score",
+        ascending=False
+    )
+
+    st.subheader("Leaderboard")
+
+    st.dataframe(
+        leaderboard.round(2),
+        use_container_width=True
+    )
