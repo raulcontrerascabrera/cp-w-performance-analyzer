@@ -269,60 +269,60 @@ if uploaded is not None:
          st.markdown("### Perfil predominante: Mixto / equilibrado")
 
 
-with tab7:
+    with tab7:
 
-    st.subheader("Comparación entre atletas")
+        st.subheader("Comparación entre atletas")
 
-    radar = go.Figure()
+        radar = go.Figure()
 
-    for _, r in summary.iterrows():
+        for _, r in summary.iterrows():
 
-        radar.add_trace(
-            go.Scatterpolar(
-                r=[
-                    r["CP_W"],
-                    r["Wprime_kJ"],
-                    r["R2"]*100
-                ],
-                theta=[
-                    "CP",
-                    "W′",
-                    "R²"
-                ],
-                fill="toself",
-                name=r["Athlete"]
+            radar.add_trace(
+                go.Scatterpolar(
+                    r=[
+                        r["CP_W"],
+                        r["Wprime_kJ"],
+                        r["R2"]*100
+                    ],
+                    theta=[
+                        "CP",
+                        "W′",
+                        "R²"
+                    ],
+                    fill="toself",
+                    name=r["Athlete"]
+                )
             )
+    
+        radar.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True
+                )
+            ),
+            showlegend=True
         )
-
-    radar.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True
-            )
-        ),
-        showlegend=True
-    )
-
-    st.plotly_chart(
-        radar,
-        use_container_width=True
-    )
-
-    leaderboard = summary.copy()
-
-    leaderboard["Score"] = (
-        leaderboard["CP_W"].rank(pct=True)*50 +
-        leaderboard["Wprime_kJ"].rank(pct=True)*50
-    )
-
-    leaderboard = leaderboard.sort_values(
-        "Score",
-        ascending=False
-    )
-
-    st.subheader("Leaderboard")
-
-    st.dataframe(
-        leaderboard.round(2),
-        use_container_width=True
-    )
+    
+        st.plotly_chart(
+            radar,
+            use_container_width=True
+        )
+    
+        leaderboard = summary.copy()
+    
+        leaderboard["Score"] = (
+            leaderboard["CP_W"].rank(pct=True)*50 +
+            leaderboard["Wprime_kJ"].rank(pct=True)*50
+        )
+    
+        leaderboard = leaderboard.sort_values(
+            "Score",
+            ascending=False
+        )
+    
+        st.subheader("Leaderboard")
+    
+        st.dataframe(
+            leaderboard.round(2),
+            use_container_width=True
+        )
