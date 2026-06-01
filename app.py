@@ -19,11 +19,17 @@ def load_data(file):
 
 st.title("📊 CP-W′ Performance Analyzer")
 
-uploaded = st.file_uploader("Sube el Excel", type=["xlsx"])
+uploaded = st.file_uploader(
+    "Sube un Excel propio (opcional)",
+    type=["xlsx"]
+)
 
 if uploaded is not None:
+    data_source = uploaded
+else:
+    data_source = "practica_potencia_critica_colab_datos.xlsx"
 
-    trials, allout, intervals, key = load_data(uploaded)
+trials, allout, intervals, key = load_data(data_source)
 
     trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
 
