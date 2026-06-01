@@ -206,39 +206,39 @@ if uploaded is not None:
 
     with tab6:
 
-    st.subheader("Perfil fisiológico")
+        st.subheader("Perfil fisiológico")
 
-    cp_pct = summary["CP_W"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
-    wp_pct = summary["Wprime_J"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
+        cp_pct = summary["CP_W"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
+        wp_pct = summary["Wprime_J"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
 
-    cp_norm = cp_pct * 100
-    wp_norm = wp_pct * 100
+        cp_norm = cp_pct * 100
+        wp_norm = wp_pct * 100
 
-    aerobic_index = cp_norm
-    severe_index = wp_norm
+        aerobic_index = cp_norm
+        severe_index = wp_norm
 
-    fatigue_index = (
+        fatigue_index = (
         athlete_df["mean_power_W"].max()
         /
         athlete_df["mean_power_W"].min()
-    ) * 50
+        ) * 50
 
-    fatigue_index = min(fatigue_index,100)
+        fatigue_index = min(fatigue_index,100)
 
-    global_score = (
+        global_score = (
         aerobic_index*0.4 +
         severe_index*0.4 +
         fatigue_index*0.2
-    )
+        )
 
-    c1,c2,c3,c4 = st.columns(4)
+        c1,c2,c3,c4 = st.columns(4)
 
-    c1.metric("Aerobic Index", f"{aerobic_index:.1f}")
-    c2.metric("Severe Domain Index", f"{severe_index:.1f}")
-    c3.metric("Fatigue Resistance", f"{fatigue_index:.1f}")
-    c4.metric("Global Score", f"{global_score:.1f}")
+        c1.metric("Aerobic Index", f"{aerobic_index:.1f}")
+        c2.metric("Severe Domain Index", f"{severe_index:.1f}")
+        c3.metric("Fatigue Resistance", f"{fatigue_index:.1f}")
+        c4.metric("Global Score", f"{global_score:.1f}")
 
-    fig = go.Figure(go.Indicator(
+        fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=global_score,
         title={'text': "Global Performance Score"},
@@ -246,26 +246,26 @@ if uploaded is not None:
             'axis': {'range': [0,100]},
             'bar': {'thickness':0.4}
         }
-    ))
+        ))
 
-    st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
 
-    if global_score >= 75:
+        if global_score >= 75:
         st.success("Perfil fisiológico: Excelente")
-    elif global_score >= 50:
+        elif global_score >= 50:
         st.info("Perfil fisiológico: Alto")
-    elif global_score >= 25:
+        elif global_score >= 25:
         st.warning("Perfil fisiológico: Medio")
-    else:
+        else:
         st.error("Perfil fisiológico: Bajo")
 
-    st.markdown("---")
+        st.markdown("---")
 
-    if aerobic_index > severe_index + 15:
+        if aerobic_index > severe_index + 15:
         st.markdown("### Perfil predominante: Aeróbico resistente")
-    elif severe_index > aerobic_index + 15:
+        elif severe_index > aerobic_index + 15:
         st.markdown("### Perfil predominante: Especialista dominio severo")
-    else:
+        else:
         st.markdown("### Perfil predominante: Mixto / equilibrado")
 
 
