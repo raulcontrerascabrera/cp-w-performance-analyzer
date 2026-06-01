@@ -97,46 +97,24 @@ with tab1:
         fig = px.bar(summary, x="Athlete", y="CP_W")
         st.plotly_chart(fig, use_container_width=True)
 
-    athlete_row = summary[summary.Athlete==athlete].iloc[0]
-    athlete_df = trials[trials.athlete_id==athlete]
+   athlete_row = summary[summary.Athlete==athlete].iloc[0]
+athlete_df = trials[trials.athlete_id==athlete]
 
-with tab2:
+with tab1:
 
-        st.subheader(f"Perfil atleta {athlete}")
+    st.subheader("Resumen")
 
-        X = athlete_df[["duration_s"]]
-        y = athlete_df["work_J"]
+    c1,c2,c3,c4 = st.columns(4)
 
-        model = LinearRegression().fit(X,y)
+    c1.metric("CP media", round(summary.CP_W.mean(),1))
+    c2.metric("W′ medio (kJ)", round(summary.Wprime_kJ.mean(),1))
+    c3.metric("Mayor CP", round(summary.CP_W.max(),1))
+    c4.metric("Mayor W′", round(summary.Wprime_kJ.max(),1))
 
-        pred = model.predict(X)
+    st.dataframe(summary.round(2), use_container_width=True)
 
-        fig = go.Figure()
-        fig.add_scatter(x=athlete_df["duration_s"], y=y,
-                        mode="markers", name="Observado")
-        fig.add_scatter(x=athlete_df["duration_s"], y=pred,
-                        mode="lines", name="Modelo")
-        st.plotly_chart(fig, use_container_width=True)
-
-        cp = athlete_row.CP_W
-        wp = athlete_row.Wprime_J
-
-        t = np.linspace(60,1200,500)
-
-        fig2 = go.Figure()
-        fig2.add_scatter(
-            x=t,
-            y=cp + wp/t,
-            mode="lines",
-            name="Modelo"
-        )
-        fig2.add_scatter(
-            x=athlete_df["duration_s"],
-            y=athlete_df["mean_power_W"],
-            mode="markers",
-            name="Datos"
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+    fig = px.bar(summary, x="Athlete", y="CP_W")
+    st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
 
