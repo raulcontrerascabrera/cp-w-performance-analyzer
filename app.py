@@ -22,17 +22,14 @@ st.title("📊 CP-W′ Performance Analyzer")
 uploaded = st.file_uploader("Sube el Excel", type=["xlsx"])
 
 if uploaded is not None:
-    excel_source = uploaded
-else
-    excel_source = "practica_potencia_critica_colab_datos.xlsx"
 
-trials, allout, intervals, key = load_data(uploaded)
+    trials, allout, intervals, key = load_data(uploaded)
 
-trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
+    trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
 
-results = []
+    results = []
 
-for athlete, df in trials.groupby("athlete_id"):
+    for athlete, df in trials.groupby("athlete_id"):
         X = df[["duration_s"]]
         y = df["work_J"]
 
