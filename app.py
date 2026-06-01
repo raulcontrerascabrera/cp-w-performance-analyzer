@@ -81,7 +81,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Comparación"
 ])
 
-    with tab1:
+with tab1:
 
         st.subheader("Resumen")
 
@@ -100,7 +100,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     athlete_row = summary[summary.Athlete==athlete].iloc[0]
     athlete_df = trials[trials.athlete_id==athlete]
 
-    with tab2:
+with tab2:
 
         st.subheader(f"Perfil atleta {athlete}")
 
@@ -138,7 +138,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         )
         st.plotly_chart(fig2, use_container_width=True)
 
-    with tab3:
+with tab3:
 
         CP_3min = allout.loc[allout["time_s"]>=155,"power_W"].mean()
 
@@ -160,7 +160,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         fig.add_hline(y=CP_3min)
         st.plotly_chart(fig, use_container_width=True)
 
-    with tab4:
+with tab4:
 
         cp = athlete_row.CP_W
         wp = athlete_row.Wprime_J
@@ -192,7 +192,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 
         st.dataframe(out.round(2), use_container_width=True)
 
-    with tab5:
+with tab5:
 
         cp_pct = summary["CP_W"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
         wp_pct = summary["Wprime_J"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
@@ -223,7 +223,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         Estos resultados sugieren un perfil fisiológico dependiente de la combinación entre capacidad aeróbica sostenible y tolerancia al trabajo realizado por encima de la potencia crítica.
         """)
 
-    with tab6:
+with tab6:
 
         st.subheader("Perfil fisiológico")
 
@@ -288,7 +288,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
          st.markdown("### Perfil predominante: Mixto / equilibrado")
 
 
-    with tab7:
+with tab7:
 
         st.subheader("Comparación entre atletas")
 
