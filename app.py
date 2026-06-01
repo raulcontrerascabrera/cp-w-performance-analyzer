@@ -1,0 +1,236 @@
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from sklearn.linear_model import LinearRegression
+
+st.set_page_config(page_title="CP-W′ Performance Analyzer", layout="wide")
+
+@st.cache_data
+def load_data(file):
+    xl = pd.ExcelFile(file)
+    trials = pd.read_excel(file, sheet_name="trials_CP")
+    allout = pd.read_excel(file, sheet_name="three_min_allout")
+    intervals = pd.read_excel(file, sheet_name="interval_templates")
+    key = pd.read_excel(file, sheet_name="instructor_key")
+    return trials, allout, intervals, key
+
+st.title("📊 CP-W′ Performance Analyzer")
+
+uploaded = st.file_uploader("Sube el Excel", type=["xlsx"])
+
+if uploaded is not None:
+
+    trials, allout, intervals, key = load_data(uploaded)
+
+    trials["work_J"] = trials["mean_power_W"] * trials["duration_s"]
+
+    results = []
+
+    for athlete, df in trials.groupby("athlete_id"):
+        X = df[["duration_s"]]
+        y = df["work_J"]
+
+        model = LinearRegression()
+        model.fit(X, y)
+
+        cp = model.coef_[0]
+        wp = model.intercept_
+        r2 = model.score(X, y)
+
+        results.append([athlete, cp, wp, wp/1000, r2])
+
+    summary = pd.DataFrame(
+        results,
+        columns=["Athlete","CP_W","Wprime_J","Wprime_kJ","R2"]
+    )
+
+    athlete = st.sidebar.selectbox(
+        "Seleccionar atleta",
+        summary["Athlete"].tolist()
+    )
+
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "Dashboard",
+        "Perfil",
+        "3-min All-Out",
+        "HIIT",
+        "Interpretación",
+        "Clasificación"
+    ])
+
+    with tab1:
+
+        st.subheader("Resumen")
+
+        c1,c2,c3,c4 = st.columns(4)
+
+        c1.metric("CP media", round(summary.CP_W.mean(),1))
+        c2.metric("W′ medio (kJ)", round(summary.Wprime_kJ.mean(),1))
+        c3.metric("Mayor CP", round(summary.CP_W.max(),1))
+        c4.metric("Mayor W′", round(summary.Wprime_kJ.max(),1))
+
+        st.dataframe(summary.round(2), use_container_width=True)
+
+        fig = px.bar(summary, x="Athlete", y="CP_W")
+        st.plotly_chart(fig, use_container_width=True)
+
+    athlete_row = summary[summary.Athlete==athlete].iloc[0]
+    athlete_df = trials[trials.athlete_id==athlete]
+
+    with tab2:
+
+        st.subheader(f"Perfil atleta {athlete}")
+
+        X = athlete_df[["duration_s"]]
+        y = athlete_df["work_J"]
+
+        model = LinearRegression().fit(X,y)
+
+        pred = model.predict(X)
+
+        fig = go.Figure()
+        fig.add_scatter(x=athlete_df["duration_s"], y=y,
+                        mode="markers", name="Observado")
+        fig.add_scatter(x=athlete_df["duration_s"], y=pred,
+                        mode="lines", name="Modelo")
+        st.plotly_chart(fig, use_container_width=True)
+
+        cp = athlete_row.CP_W
+        wp = athlete_row.Wprime_J
+
+        t = np.linspace(60,1200,500)
+
+        fig2 = go.Figure()
+        fig2.add_scatter(
+            x=t,
+            y=cp + wp/t,
+            mode="lines",
+            name="Modelo"
+        )
+        fig2.add_scatter(
+            x=athlete_df["duration_s"],
+            y=athlete_df["mean_power_W"],
+            mode="markers",
+            name="Datos"
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+    with tab3:
+
+        CP_3min = allout.loc[allout["time_s"]>=155,"power_W"].mean()
+
+        Wp_3min = (
+            (allout["power_W"] - CP_3min)
+            .clip(lower=0)
+            .mul(5)
+            .sum()
+        )
+
+        st.metric("CP 3-min", round(CP_3min,1))
+        st.metric("W′ 3-min", round(Wp_3min/1000,2))
+
+        fig = px.line(
+            allout,
+            x="time_s",
+            y="power_W"
+        )
+        fig.add_hline(y=CP_3min)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with tab4:
+
+        cp = athlete_row.CP_W
+        wp = athlete_row.Wprime_J
+
+        out = []
+
+        for _,r in intervals.iterrows():
+
+            gasto = (
+                (r["work_power_%CP"]/100*cp)-cp
+            ) * r["work_duration_s"]
+
+            reps = wp/gasto
+
+            out.append([
+                r["session_id"],
+                gasto,
+                reps
+            ])
+
+        out = pd.DataFrame(
+            out,
+            columns=[
+                "Sesion",
+                "Gasto_rep_J",
+                "Reps_hasta_fallo"
+            ]
+        )
+
+        st.dataframe(out.round(2), use_container_width=True)
+
+    with tab5:
+
+        cp_pct = summary["CP_W"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
+        wp_pct = summary["Wprime_J"].rank(pct=True)[summary["Athlete"]==athlete].iloc[0]
+
+        st.subheader("Interpretación fisiológica")
+
+        if cp_pct > 0.75:
+            cp_text = "CP elevada"
+        elif cp_pct > 0.50:
+            cp_text = "CP moderadamente elevada"
+        else:
+            cp_text = "CP moderada o baja"
+
+        if wp_pct > 0.75:
+            wp_text = "W′ elevada"
+        elif wp_pct > 0.50:
+            wp_text = "W′ moderada"
+        else:
+            wp_text = "W′ limitada"
+
+        st.markdown(f"""
+        ### Resumen
+
+        El atleta presenta una **{cp_text}** y una **{wp_text}** dentro del grupo analizado.
+
+        La CP obtenida fue de **{cp:.1f} W** y el W′ de **{athlete_row.Wprime_kJ:.1f} kJ**.
+
+        Estos resultados sugieren un perfil fisiológico dependiente de la combinación entre capacidad aeróbica sostenible y tolerancia al trabajo realizado por encima de la potencia crítica.
+        """)
+
+    with tab6:
+
+        score = (cp_pct + wp_pct)/2
+
+        if score < 0.25:
+            level = "Baja"
+        elif score < 0.50:
+            level = "Media"
+        elif score < 0.75:
+            level = "Alta"
+        else:
+            level = "Excelente"
+
+        ratio = athlete_row.Wprime_kJ / athlete_row.CP_W
+
+        if cp_pct > 0.7 and ratio < 0.06:
+            speciality = "Fondo / 10 km / Media maratón"
+        elif cp_pct > 0.7 and wp_pct > 0.7:
+            speciality = "Medio fondo largo"
+        elif wp_pct > 0.7:
+            speciality = "800-1500 m"
+        else:
+            speciality = "Perfil mixto"
+
+        st.metric("Nivel fisiológico", level)
+
+        st.success(f"Especialidad sugerida: {speciality}")
+
+        st.markdown("""
+        **Importante:** esta clasificación es relativa al grupo analizado y no constituye una clasificación normativa de atletas de alto rendimiento.
+        """)
